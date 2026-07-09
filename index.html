@@ -379,44 +379,56 @@ async function loadContent(){
 async function applyMigrations(){
   let changed = false;
 
-  // Remove the old standalone 'foundations' stage and move its modules to 'week-1'
-  const foundationsIdx = content.stages.findIndex(s=>s.id==='foundations');
-  if(foundationsIdx !== -1){
-    content.stages.splice(foundationsIdx, 1);
-    changed = true;
-  }
-  content.modules.forEach(m=>{ if(m.stageId==='foundations'){ m.stageId='week-1'; changed=true; } });
+  // Normalize stages: remove old week-1/week-2, ensure clean set in correct order
+  const stageMap = {'week-1':'foundations','week-2':'in-the-field'};
+  content.stages = content.stages.filter(s=>!stageMap[s.id]);
+  const wantedStages = [
+    {id:'onboarding', name:'Onboarding'},
+    {id:'foundations', name:'Foundations'},
+    {id:'in-the-field', name:'In the Field'},
+    {id:'ongoing', name:'Ongoing / Advanced'}
+  ];
+  wantedStages.forEach(ws=>{
+    if(!content.stages.find(s=>s.id===ws.id)){ content.stages.push(ws); changed=true; }
+    else {
+      const s = content.stages.find(s=>s.id===ws.id);
+      if(s.name !== ws.name){ s.name = ws.name; changed=true; }
+    }
+  });
+  const order = ['onboarding','foundations','in-the-field','ongoing'];
+  content.stages.sort((a,b)=>(order.indexOf(a.id)+1||99)-(order.indexOf(b.id)+1||99));
+
+  // Remap any modules still pointing at old stage ids
+  content.modules.forEach(m=>{
+    if(stageMap[m.stageId]){ m.stageId=stageMap[m.stageId]; changed=true; }
+  });
 
   const foundationsModules = [
-    {id:'seed_internet-basics', stageId:'week-1', topics:['Internet Basics'], title:'Internet Basics', url:'https://youtu.be/7_LPdttKXPc?si=s6lpm2uc9Ld-5iIO', description:'', duration:''},
-    {id:'seed_internet-types', stageId:'week-1', topics:['Internet Basics'], title:'Internet Types', url:'https://www.youtube.com/watch?v=Ll_LUl96bYA', description:'', duration:''},
-    {id:'seed_cable-vs-fiber', stageId:'week-1', topics:['Internet Basics','Fiber vs Cable'], title:'Cable Vs Fiber', url:'https://youtu.be/RVojwPRfSJ0?si=YoVcoZCL52bjakqq', description:'', duration:''},
-    {id:'seed_cable-dsl-fiber', stageId:'week-1', topics:['Internet Basics','Fiber vs Cable'], title:'Cable vs DSL vs Fiber Internet Explained', url:'https://youtu.be/qQYiwmamq38?si=YoeGlFnUDTF4amvw', description:'', duration:''},
-    {id:'seed_mesh-wifi', stageId:'week-1', topics:['Internet Basics','Wifi'], title:'Mesh Wifi', url:'https://youtu.be/XaOcjHrdMFE?si=XPkIViQ8pvJ7A0Er', description:'', duration:''},
-    {id:'seed_what-is-fiber', stageId:'week-1', topics:['Internet Basics','Fiber'], title:'What Is Fiber Optic Internet', url:'https://youtu.be/v0xemHJHhPk?si=1oPQM3kKKPiqdvqN', description:'', duration:''},
-    {id:'seed_ziply-install', stageId:'week-1', topics:['Internet Basics','Installation'], title:'Ziply Fiber Installation', url:'https://youtu.be/bMdS9GqFZF0?si=hRpxpdUXPDlniGFP', description:'', duration:''},
-    {id:'seed_latency', stageId:'week-1', topics:['Internet Basics'], title:'Latency', url:'https://youtu.be/S0NKk86HRdg?si=c8Um3TYE3o_c8MGV', description:'', duration:''}
+    {id:'seed_internet-basics', stageId:'foundations', topics:['Internet Basics'], title:'Internet Basics', url:'https://youtu.be/7_LPdttKXPc?si=s6lpm2uc9Ld-5iIO', description:'', duration:''},
+    {id:'seed_internet-types', stageId:'foundations', topics:['Internet Basics'], title:'Internet Types', url:'https://www.youtube.com/watch?v=Ll_LUl96bYA', description:'', duration:''},
+    {id:'seed_cable-vs-fiber', stageId:'foundations', topics:['Internet Basics','Fiber vs Cable'], title:'Cable Vs Fiber', url:'https://youtu.be/RVojwPRfSJ0?si=YoVcoZCL52bjakqq', description:'', duration:''},
+    {id:'seed_cable-dsl-fiber', stageId:'foundations', topics:['Internet Basics','Fiber vs Cable'], title:'Cable vs DSL vs Fiber Internet Explained', url:'https://youtu.be/qQYiwmamq38?si=YoeGlFnUDTF4amvw', description:'', duration:''},
+    {id:'seed_mesh-wifi', stageId:'foundations', topics:['Internet Basics','Wifi'], title:'Mesh Wifi', url:'https://youtu.be/XaOcjHrdMFE?si=XPkIViQ8pvJ7A0Er', description:'', duration:''},
+    {id:'seed_what-is-fiber', stageId:'foundations', topics:['Internet Basics','Fiber'], title:'What Is Fiber Optic Internet', url:'https://youtu.be/v0xemHJHhPk?si=1oPQM3kKKPiqdvqN', description:'', duration:''},
+    {id:'seed_ziply-install', stageId:'foundations', topics:['Internet Basics','Installation'], title:'Ziply Fiber Installation', url:'https://youtu.be/bMdS9GqFZF0?si=hRpxpdUXPDlniGFP', description:'', duration:''},
+    {id:'seed_latency', stageId:'foundations', topics:['Internet Basics'], title:'Latency', url:'https://youtu.be/S0NKk86HRdg?si=c8Um3TYE3o_c8MGV', description:'', duration:''}
   ];
 
-  foundationsModules.forEach((m, i)=>{
+  foundationsModules.forEach((m,i)=>{
     if(!content.modules.find(x=>x.id===m.id)){
-      m.order = content.modules.length + i;
-      content.modules.push(m);
-      changed = true;
+      m.order=content.modules.length+i; content.modules.push(m); changed=true;
     }
   });
 
   const inTheFieldModules = [
-    {id:'seed_pitch', stageId:'week-2', topics:['Pitch'], title:'Pitch', url:'https://youtu.be/GR53M-lwdKY?si=60qqrHPb_q2mD0jB', description:'', duration:''},
-    {id:'seed_d2d-fiber-sales', stageId:'week-2', topics:['Sales'], title:'D2D Fiber Sales: How to Actually Get Better', url:'https://youtu.be/JchPEP3u6sA?si=lYVXH_3LhqKZp0gm', description:'', duration:''},
-    {id:'seed_body-language', stageId:'week-2', topics:['Body Language'], title:'Body Language', url:'https://youtu.be/tgNOgZp_3Mk?si=FUCVJNXClUejsRoG', description:'', duration:''}
+    {id:'seed_pitch', stageId:'in-the-field', topics:['Pitch'], title:'Pitch', url:'https://youtu.be/GR53M-lwdKY?si=60qqrHPb_q2mD0jB', description:'', duration:''},
+    {id:'seed_d2d-fiber-sales', stageId:'in-the-field', topics:['Sales'], title:'D2D Fiber Sales: How to Actually Get Better', url:'https://youtu.be/JchPEP3u6sA?si=lYVXH_3LhqKZp0gm', description:'', duration:''},
+    {id:'seed_body-language', stageId:'in-the-field', topics:['Body Language'], title:'Body Language', url:'https://youtu.be/tgNOgZp_3Mk?si=FUCVJNXClUejsRoG', description:'', duration:''}
   ];
 
-  inTheFieldModules.forEach((m, i)=>{
+  inTheFieldModules.forEach((m,i)=>{
     if(!content.modules.find(x=>x.id===m.id)){
-      m.order = content.modules.length + i;
-      content.modules.push(m);
-      changed = true;
+      m.order=content.modules.length+i; content.modules.push(m); changed=true;
     }
   });
 
@@ -429,8 +441,8 @@ function seedContent(){
   return {
     stages: [
       {id:'onboarding', name:'Onboarding'},
-      {id:'week-1', name:'Week 1: Foundations'},
-      {id:'week-2', name:'Week 2: In the Field'},
+      {id:'foundations', name:'Foundations'},
+      {id:'in-the-field', name:'In the Field'},
       {id:'ongoing', name:'Ongoing / Advanced'}
     ],
     modules: [
