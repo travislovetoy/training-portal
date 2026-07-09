@@ -432,6 +432,31 @@ async function applyMigrations(){
     }
   });
 
+  if(!content.stages.find(s=>s.id==='fiber-equipment')){
+    const idx = content.stages.findIndex(s=>s.id==='in-the-field');
+    content.stages.splice(idx === -1 ? content.stages.length : idx, 0, {id:'fiber-equipment', name:'Fiber Equipment & Definitions'});
+    changed=true;
+  }
+
+  const equipmentModules = [
+    {id:'seed_olt', stageId:'fiber-equipment', topics:['Equipment'], title:'Optical Line Terminal (OLT)', url:'', description:'The provider-side device at the central office that sends and receives fiber signals. It\'s the backbone of the fiber network — everything starts here before reaching the customer.', duration:''},
+    {id:'seed_colo', stageId:'fiber-equipment', topics:['Equipment'], title:'Colocation (Colo)', url:'', description:'A shared facility where multiple internet providers house their network equipment. It allows different networks to connect to each other and exchange traffic without each provider needing their own building.', duration:''},
+    {id:'seed_mspt', stageId:'fiber-equipment', topics:['Equipment'], title:'Multi-Service Port Terminal (MSPT)', url:'', description:'A device that aggregates fiber connections from multiple customers in a neighborhood and routes them back to the main network. Think of it as a neighborhood hub for fiber signals.', duration:''},
+    {id:'seed_ext-tray', stageId:'fiber-equipment', topics:['Equipment'], title:'Exterior Fiber Tray', url:'', description:'A weatherproof enclosure mounted on the outside of a home or building. It protects and organizes the point where the fiber cable from the street meets the fiber going into the house.', duration:''},
+    {id:'seed_splice', stageId:'fiber-equipment', topics:['Equipment'], title:'Fiber Splice', url:'', description:'The permanent joining of two fiber cables end-to-end to create one continuous signal path. Unlike a connector (which can be unplugged), a splice is fixed — it\'s the most reliable way to extend a fiber run.', duration:''},
+    {id:'seed_int-tray', stageId:'fiber-equipment', topics:['Equipment'], title:'Interior Fiber Tray', url:'', description:'An enclosure inside the home that organizes and protects fiber cable connections. It\'s typically where the fiber entering the home is managed before it reaches the ONT.', duration:''},
+    {id:'seed_ont', stageId:'fiber-equipment', topics:['Equipment'], title:'Optical Network Terminal (ONT)', url:'', description:'The box installed at the customer\'s home that converts the fiber optic light signal into an ethernet signal a router can use. Often called a "fiber modem" — it\'s the handoff point between the provider\'s network and the customer\'s devices.', duration:''},
+    {id:'seed_cat6', stageId:'fiber-equipment', topics:['Equipment'], title:'CAT 6 Cable', url:'', description:'A copper ethernet cable used to connect devices inside the home. It supports speeds up to 10 Gbps and is the standard cable used to connect the ONT to a router.', duration:''},
+    {id:'seed_router', stageId:'fiber-equipment', topics:['Equipment'], title:'Router', url:'', description:'Takes the internet signal from the ONT and distributes it to devices in the home — wirelessly via Wi-Fi and through wired ethernet ports. It also manages the local network and assigns IP addresses to each device.', duration:''},
+    {id:'seed_mesh', stageId:'fiber-equipment', topics:['Equipment'], title:'Mesh System', url:'', description:'Multiple wireless nodes placed around a home that work together as one seamless Wi-Fi network. Unlike a single router, a mesh system eliminates dead zones and automatically routes devices to the strongest signal.', duration:''}
+  ];
+
+  equipmentModules.forEach((m,i)=>{
+    if(!content.modules.find(x=>x.id===m.id)){
+      m.order=content.modules.length+i; content.modules.push(m); changed=true;
+    }
+  });
+
   if(changed){
     try{ await saveContent(); }catch(e){}
   }
