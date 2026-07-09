@@ -403,6 +403,20 @@ async function applyMigrations(){
     }
   });
 
+  const inTheFieldModules = [
+    {id:'seed_pitch', stageId:'week-2', topics:['Pitch'], title:'Pitch', url:'https://youtu.be/GR53M-lwdKY?si=60qqrHPb_q2mD0jB', description:'', duration:''},
+    {id:'seed_d2d-fiber-sales', stageId:'week-2', topics:['Sales'], title:'D2D Fiber Sales: How to Actually Get Better', url:'https://youtu.be/JchPEP3u6sA?si=lYVXH_3LhqKZp0gm', description:'', duration:''},
+    {id:'seed_body-language', stageId:'week-2', topics:['Body Language'], title:'Body Language', url:'https://youtu.be/tgNOgZp_3Mk?si=FUCVJNXClUejsRoG', description:'', duration:''}
+  ];
+
+  inTheFieldModules.forEach((m, i)=>{
+    if(!content.modules.find(x=>x.id===m.id)){
+      m.order = content.modules.length + i;
+      content.modules.push(m);
+      changed = true;
+    }
+  });
+
   if(changed){
     try{ await saveContent(); }catch(e){}
   }
