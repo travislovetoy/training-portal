@@ -379,20 +379,23 @@ async function loadContent(){
 async function applyMigrations(){
   let changed = false;
 
-  if(!content.stages.find(s=>s.id==='foundations')){
-    content.stages.unshift({id:'foundations', name:'Foundations'});
+  // Remove the old standalone 'foundations' stage and move its modules to 'week-1'
+  const foundationsIdx = content.stages.findIndex(s=>s.id==='foundations');
+  if(foundationsIdx !== -1){
+    content.stages.splice(foundationsIdx, 1);
     changed = true;
   }
+  content.modules.forEach(m=>{ if(m.stageId==='foundations'){ m.stageId='week-1'; changed=true; } });
 
   const foundationsModules = [
-    {id:'seed_internet-basics', stageId:'foundations', topics:['Internet Basics'], title:'Internet Basics', url:'https://youtu.be/7_LPdttKXPc?si=s6lpm2uc9Ld-5iIO', description:'', duration:''},
-    {id:'seed_internet-types', stageId:'foundations', topics:['Internet Basics'], title:'Internet Types', url:'https://www.youtube.com/watch?v=Ll_LUl96bYA', description:'', duration:''},
-    {id:'seed_cable-vs-fiber', stageId:'foundations', topics:['Internet Basics','Fiber vs Cable'], title:'Cable Vs Fiber', url:'https://youtu.be/RVojwPRfSJ0?si=YoVcoZCL52bjakqq', description:'', duration:''},
-    {id:'seed_cable-dsl-fiber', stageId:'foundations', topics:['Internet Basics','Fiber vs Cable'], title:'Cable vs DSL vs Fiber Internet Explained', url:'https://youtu.be/qQYiwmamq38?si=YoeGlFnUDTF4amvw', description:'', duration:''},
-    {id:'seed_mesh-wifi', stageId:'foundations', topics:['Internet Basics','Wifi'], title:'Mesh Wifi', url:'https://youtu.be/XaOcjHrdMFE?si=XPkIViQ8pvJ7A0Er', description:'', duration:''},
-    {id:'seed_what-is-fiber', stageId:'foundations', topics:['Internet Basics','Fiber'], title:'What Is Fiber Optic Internet', url:'https://youtu.be/v0xemHJHhPk?si=1oPQM3kKKPiqdvqN', description:'', duration:''},
-    {id:'seed_ziply-install', stageId:'foundations', topics:['Internet Basics','Installation'], title:'Ziply Fiber Installation', url:'https://youtu.be/bMdS9GqFZF0?si=hRpxpdUXPDlniGFP', description:'', duration:''},
-    {id:'seed_latency', stageId:'foundations', topics:['Internet Basics'], title:'Latency', url:'https://youtu.be/S0NKk86HRdg?si=c8Um3TYE3o_c8MGV', description:'', duration:''}
+    {id:'seed_internet-basics', stageId:'week-1', topics:['Internet Basics'], title:'Internet Basics', url:'https://youtu.be/7_LPdttKXPc?si=s6lpm2uc9Ld-5iIO', description:'', duration:''},
+    {id:'seed_internet-types', stageId:'week-1', topics:['Internet Basics'], title:'Internet Types', url:'https://www.youtube.com/watch?v=Ll_LUl96bYA', description:'', duration:''},
+    {id:'seed_cable-vs-fiber', stageId:'week-1', topics:['Internet Basics','Fiber vs Cable'], title:'Cable Vs Fiber', url:'https://youtu.be/RVojwPRfSJ0?si=YoVcoZCL52bjakqq', description:'', duration:''},
+    {id:'seed_cable-dsl-fiber', stageId:'week-1', topics:['Internet Basics','Fiber vs Cable'], title:'Cable vs DSL vs Fiber Internet Explained', url:'https://youtu.be/qQYiwmamq38?si=YoeGlFnUDTF4amvw', description:'', duration:''},
+    {id:'seed_mesh-wifi', stageId:'week-1', topics:['Internet Basics','Wifi'], title:'Mesh Wifi', url:'https://youtu.be/XaOcjHrdMFE?si=XPkIViQ8pvJ7A0Er', description:'', duration:''},
+    {id:'seed_what-is-fiber', stageId:'week-1', topics:['Internet Basics','Fiber'], title:'What Is Fiber Optic Internet', url:'https://youtu.be/v0xemHJHhPk?si=1oPQM3kKKPiqdvqN', description:'', duration:''},
+    {id:'seed_ziply-install', stageId:'week-1', topics:['Internet Basics','Installation'], title:'Ziply Fiber Installation', url:'https://youtu.be/bMdS9GqFZF0?si=hRpxpdUXPDlniGFP', description:'', duration:''},
+    {id:'seed_latency', stageId:'week-1', topics:['Internet Basics'], title:'Latency', url:'https://youtu.be/S0NKk86HRdg?si=c8Um3TYE3o_c8MGV', description:'', duration:''}
   ];
 
   foundationsModules.forEach((m, i)=>{
