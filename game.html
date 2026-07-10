@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build the Network — Field Book</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0F1B25;color:#FBF8F0;font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+
+.game-header{
+  background:#1C2B39;border-bottom:3px solid #B84B27;
+  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
+}
+.back-link{font-family:'Press Start 2P',monospace;font-size:10px;color:#A3874A;text-decoration:none;}
+.back-link:hover{color:#B84B27;}
+.score-display{font-family:'Press Start 2P',monospace;font-size:11px;color:#A3874A;}
+
+#app{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 16px;}
+
+.screen{width:100%;max-width:760px;display:flex;flex-direction:column;align-items:center;gap:18px;}
+
+/* Title */
+.game-title{
+  font-family:'Press Start 2P',monospace;font-size:clamp(20px,5vw,36px);
+  color:#B84B27;text-align:center;line-height:1.6;
+  text-shadow:4px 4px 0 #5C2010;
+}
+.subtitle{font-size:14px;color:#8FA3B5;text-align:center;max-width:440px;line-height:1.7;}
+.phase-badges{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.phase-badge{
+  background:#1C2B39;border:2px solid #3C5670;
+  padding:14px 20px;font-size:12px;color:#8FA3B5;text-align:center;min-width:140px;
+}
+.phase-badge .label{font-family:'Press Start 2P',monospace;font-size:8px;color:#A3874A;display:block;margin-bottom:6px;}
+
+.btn-primary{
+  font-family:'Press Start 2P',monospace;font-size:13px;
+  background:#B84B27;color:#FBF8F0;border:none;
+  padding:16px 32px;cursor:pointer;
+  border-bottom:4px solid #5C2010;
+  transition:transform .1s,border-bottom-width .1s;
+}
+.btn-primary:hover{background:#D05A30;}
+.btn-primary:active{transform:translateY(2px);border-bottom-width:2px;}
+
+.btn-secondary{
+  font-family:'Press Start 2P',monospace;font-size:11px;
+  background:#243B4F;color:#D9E3EB;border:2px solid #3C5670;
+  padding:12px 20px;cursor:pointer;text-decoration:none;display:inline-block;
+}
+
+/* Network diagram */
+.network-diagram{width:100%;overflow-x:auto;padding:16px 0;}
+.network-track{display:flex;align-items:flex-start;padding:0 12px;min-width:max-content;}
+.node{display:flex;flex-direction:column;align-items:center;gap:8px;width:80px;}
+.node-circle{
+  width:64px;height:64px;border-radius:50%;
+  background:#1C2B39;border:3px solid #2C4055;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Press Start 2P',monospace;font-size:8px;text-align:center;
+  color:#4A6070;line-height:1.3;transition:all .3s;flex-shrink:0;
+}
+.node-circle.active{border-color:#B84B27;box-shadow:0 0 0 5px rgba(184,75,39,0.25);color:#B84B27;animation:pulse 1.4s infinite;}
+.node-circle.done{background:#1A2E1A;border-color:#4B6B4F;color:#6B9B6F;}
+.node-circle.anchor{background:#243B4F;border-color:#A3874A;color:#A3874A;}
+.node-label{font-family:'Press Start 2P',monospace;font-size:7px;color:#4A6070;text-align:center;line-height:1.5;max-width:80px;min-height:28px;}
+.node-label.done{color:#4B6B4F;}
+.node-label.anchor{color:#A3874A;}
+.connector{width:32px;height:3px;background:#2C4055;flex-shrink:0;margin-top:30px;}
+.connector.done{background:#4B6B4F;}
+
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 5px rgba(184,75,39,0.25);}
+  50%{box-shadow:0 0 0 10px rgba(184,75,39,0.08);}
+}
+
+/* Question */
+.question-box{
+  width:100%;background:#1C2B39;border:2px solid #3C5670;border-top:3px solid #B84B27;padding:18px 20px;text-align:center;
+}
+.question-step{font-family:'Press Start 2P',monospace;font-size:9px;color:#8FA3B5;margin-bottom:8px;}
+.question-main{font-size:15px;font-weight:700;color:#FBF8F0;line-height:1.5;}
+
+/* Choices */
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.choice{
+  background:#1C2B39;border:2px solid #3C5670;
+  padding:14px;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.choice:hover{border-color:#B84B27;background:#243B4F;}
+.choice.correct{border-color:#4B6B4F!important;background:#1A2E1A!important;pointer-events:none;}
+.choice.wrong{border-color:#B84B27!important;background:#2E1A1A!important;animation:shake .35s;}
+.choice-tag{font-family:'Press Start 2P',monospace;font-size:8px;color:#A3874A;margin-bottom:6px;}
+.choice-name{font-size:13px;font-weight:700;color:#FBF8F0;line-height:1.4;}
+.choice-body{font-size:12px;color:#8FA3B5;margin-top:4px;line-height:1.5;}
+
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+/* Feedback */
+.feedback{
+  width:100%;background:#1C2B39;border:2px solid #4B6B4F;
+  padding:14px 18px;font-size:13px;color:#D9E3EB;line-height:1.6;display:none;
+}
+.feedback.show{display:block;}
+.feedback.err{border-color:#7A3030;}
+.feedback-head{font-family:'Press Start 2P',monospace;font-size:9px;margin-bottom:6px;}
+.feedback-head.ok{color:#6B9B6F;}
+.feedback-head.err{color:#D06050;}
+
+.btn-next{
+  font-family:'Press Start 2P',monospace;font-size:11px;
+  background:#4B6B4F;color:#FBF8F0;border:none;
+  padding:13px 26px;cursor:pointer;border-bottom:3px solid #2A4A2E;
+  display:none;transition:transform .1s;
+}
+.btn-next.show{display:block;}
+.btn-next:active{transform:translateY(2px);border-bottom-width:1px;}
+
+.phase-title{font-family:'Press Start 2P',monospace;font-size:clamp(10px,2.5vw,16px);color:#B84B27;text-align:center;}
+.step-count{font-family:'Press Start 2P',monospace;font-size:9px;color:#8FA3B5;}
+
+/* Results */
+.result-stars{font-size:52px;letter-spacing:6px;text-align:center;}
+.result-score{font-family:'Press Start 2P',monospace;font-size:clamp(28px,7vw,52px);color:#A3874A;text-align:center;}
+.result-label{font-family:'Press Start 2P',monospace;font-size:9px;color:#8FA3B5;}
+.result-msg{font-size:14px;color:#8FA3B5;text-align:center;max-width:380px;line-height:1.7;}
+.result-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+
+@media(max-width:480px){
+  .choices{grid-template-columns:1fr;}
+  .node{width:64px;}
+  .node-circle{width:52px;height:52px;font-size:7px;}
+  .connector{width:20px;}
+}
+</style>
+</head>
+<body>
+
+<header class="game-header">
+  <a href="index.html" class="back-link">← PORTAL</a>
+  <div id="scoreDisplay" class="score-display" style="display:none;">SCORE: <span id="scoreNum">0</span></div>
+</header>
+
+<div id="app"></div>
+
+<script>
+const BUILD_PATH = [
+  {id:'olt',   name:'Optical Line Terminal', short:'OLT',   hint:'Sits at the central office — sends the fiber signal down the line', def:'The provider-side device at the central office that originates the fiber signal. Everything starts here.'},
+  {id:'mspt',  name:'Multi-Service Port Terminal', short:'MSPT',  hint:'Lives in the neighborhood and aggregates connections from multiple homes', def:'Aggregates fiber from multiple customers in a neighborhood and routes it back to the central office.'},
+  {id:'ext',   name:'Exterior Fiber Tray', short:'EXT TRAY', hint:'Weatherproof box mounted on the outside of the customer\'s home', def:'Protects and organizes the point where the fiber from the street meets the cable going into the house.'},
+  {id:'splice',name:'Fiber Splice', short:'SPLICE',  hint:'A permanent, fixed connection between two fiber cables', def:'The joining of two fiber cables end-to-end. Unlike a connector, it\'s permanent — the most reliable way to extend a fiber run.'},
+  {id:'int',   name:'Interior Fiber Tray', short:'INT TRAY', hint:'Inside the home — organizes fiber before it hits the ONT', def:'Manages and protects fiber connections inside the home before they reach the ONT.'},
+  {id:'ont',   name:'Optical Network Terminal', short:'ONT',   hint:'Converts the fiber light signal into ethernet — the "fiber modem"', def:'Converts the fiber optic signal to ethernet so a router can use it. The handoff between Ziply\'s network and the customer\'s devices.'},
+  {id:'router',name:'Router', short:'ROUTER', hint:'Last stop — distributes internet to every device in the home', def:'Takes the ethernet signal from the ONT and distributes it to all devices via Wi-Fi and wired ports.'},
+];
+
+const QUIZ_POOL = [
+  ...BUILD_PATH,
+  {id:'colo',  name:'Colocation (Colo)', short:'COLO',  def:'A shared facility where multiple ISPs house network equipment so their networks can interconnect without each needing their own building.'},
+  {id:'cat6',  name:'CAT 6 Cable',       short:'CAT6',  def:'Copper ethernet cable used inside the home. Connects the ONT to the router and supports speeds up to 10 Gbps.'},
+  {id:'mesh',  name:'Mesh System',       short:'MESH',  def:'Multiple wireless nodes placed around a home that act as one seamless Wi-Fi network, eliminating dead zones.'},
+  {id:'wifi7', name:'Wi-Fi 7 (802.11be)',short:'WIFI 7',def:'The latest Wi-Fi standard. Uses all three bands simultaneously, handles more devices at once, and delivers speeds up to 46 Gbps with ultra-low latency.'},
+];
+
+const QUIZ_COUNT = 5;
+
+let S = {};
+
+function init(){
+  S = {
+    phase:'title', score:0,
+    step:0, placed:[], choices:[], answered:false, wrong:0,
+    quiz:[], qIdx:0, qChoices:[], qAnswered:false, qWrong:0,
+  };
+}
+
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+
+function buildChoices(correctId){
+  const correct = BUILD_PATH.find(e=>e.id===correctId);
+  const others = shuffle(BUILD_PATH.filter(e=>e.id!==correctId)).slice(0,3);
+  return shuffle([correct,...others]);
+}
+
+function quizChoices(question){
+  const others = shuffle(QUIZ_POOL.filter(e=>e.id!==question.id)).slice(0,3);
+  return shuffle([question,...others]);
+}
+
+function startGame(){
+  S.phase='build'; S.score=0; S.step=0; S.placed=[];
+  S.answered=false; S.wrong=0;
+  S.choices=buildChoices(BUILD_PATH[0].id);
+  document.getElementById('scoreDisplay').style.display='block';
+  render();
+}
+
+function startQuiz(){
+  S.phase='quiz';
+  S.quiz=shuffle(QUIZ_POOL).slice(0,QUIZ_COUNT);
+  S.qIdx=0; S.qAnswered=false; S.qWrong=0;
+  S.qChoices=quizChoices(S.quiz[0]);
+  render();
+}
+
+function updateScore(){ document.getElementById('scoreNum').textContent=S.score; }
+
+function stars(){
+  const max=(BUILD_PATH.length+QUIZ_COUNT)*100;
+  const p=S.score/max;
+  if(p>=0.85)return'⭐⭐⭐';
+  if(p>=0.6)return'⭐⭐';
+  return'⭐';
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  const sd=document.getElementById('scoreDisplay');
+  if(S.phase==='title'){sd.style.display='none';app.innerHTML=renderTitle();}
+  else if(S.phase==='build'){sd.style.display='block';app.innerHTML=renderBuild();}
+  else if(S.phase==='quiz'){sd.style.display='block';app.innerHTML=renderQuiz();}
+  else{sd.style.display='none';app.innerHTML=renderResults();}
+  bind();
+}
+
+function renderTitle(){
+  return`<div class="screen" style="padding-top:32px;">
+    <div class="game-title">BUILD THE<br>NETWORK</div>
+    <div class="subtitle">Place every piece of fiber equipment in the right order — from the central office to the customer's router. Then prove you know your definitions.</div>
+    <div class="phase-badges">
+      <div class="phase-badge"><span class="label">PHASE 1</span>Build the Network<br><small style="color:#5A7690;">${BUILD_PATH.length} equipment slots</small></div>
+      <div class="phase-badge"><span class="label">PHASE 2</span>Definition Quiz<br><small style="color:#5A7690;">${QUIZ_COUNT} questions</small></div>
+    </div>
+    <button class="btn-primary" onclick="startGame()">START GAME</button>
+    <a href="index.html" style="font-size:12px;color:#5A7690;text-decoration:none;">← Back to training portal</a>
+  </div>`;
+}
+
+function renderBuild(){
+  const cur=BUILD_PATH[S.step];
+
+  let track='';
+  // Left anchor
+  track+=`<div class="node"><div class="node-circle anchor">COLO</div><div class="node-label anchor">Central<br>Office</div></div>`;
+  BUILD_PATH.forEach((eq,i)=>{
+    const done=S.placed.includes(eq.id);
+    const active=i===S.step;
+    track+=`<div class="connector ${done?'done':''}"></div>`;
+    track+=`<div class="node">
+      <div class="node-circle ${done?'done':active?'active':''}" id="nc-${eq.id}">${done?eq.short:'?'}</div>
+      <div class="node-label ${done?'done':''}">${done?eq.name:''}</div>
+    </div>`;
+  });
+  track+=`<div class="connector ${S.placed.length===BUILD_PATH.length?'done':''}"></div>`;
+  track+=`<div class="node"><div class="node-circle anchor">HOME</div><div class="node-label anchor">Customer<br>Home</div></div>`;
+
+  const choiceCards=S.choices.map(eq=>`
+    <div class="choice" data-id="${eq.id}">
+      <div class="choice-tag">${eq.short}</div>
+      <div class="choice-name">${eq.name}</div>
+    </div>`).join('');
+
+  return`<div class="screen">
+    <div class="phase-title">PHASE 1: BUILD THE NETWORK</div>
+    <div class="step-count">SLOT ${S.step+1} OF ${BUILD_PATH.length}</div>
+    <div class="network-diagram"><div class="network-track">${track}</div></div>
+    <div class="question-box">
+      <div class="question-step">WHAT GOES IN SLOT ${S.step+1}?</div>
+      <div class="question-main">${cur.hint}</div>
+    </div>
+    <div class="choices" id="choices">${choiceCards}</div>
+    <div class="feedback" id="fb"><div class="feedback-head" id="fbHead"></div><div id="fbBody"></div></div>
+    <button class="btn-next" id="nxt" onclick="nextStep()">${S.step<BUILD_PATH.length-1?'NEXT SLOT →':'GO TO QUIZ →'}</button>
+  </div>`;
+}
+
+function renderQuiz(){
+  updateScore();
+  const q=S.quiz[S.qIdx];
+  const cards=S.qChoices.map((eq,i)=>`
+    <div class="choice" data-qi="${i}">
+      <div class="choice-tag">OPTION ${String.fromCharCode(65+i)}</div>
+      <div class="choice-body">${eq.def}</div>
+    </div>`).join('');
+
+  return`<div class="screen">
+    <div class="phase-title">PHASE 2: DEFINITION QUIZ</div>
+    <div class="step-count">QUESTION ${S.qIdx+1} OF ${QUIZ_COUNT}</div>
+    <div class="question-box">
+      <div class="question-step">WHAT IS THE</div>
+      <div class="question-main">${q.name} <span style="color:#A3874A;font-size:13px;">(${q.short})</span></div>
+    </div>
+    <div class="choices" id="qchoices">${cards}</div>
+    <div class="feedback" id="fb"><div class="feedback-head" id="fbHead"></div><div id="fbBody"></div></div>
+    <button class="btn-next" id="nxt" onclick="nextQuiz()">${S.qIdx<QUIZ_COUNT-1?'NEXT QUESTION →':'SEE RESULTS →'}</button>
+  </div>`;
+}
+
+function renderResults(){
+  const max=(BUILD_PATH.length+QUIZ_COUNT)*100;
+  const pct=Math.round(S.score/max*100);
+  const msg=pct>=85?'You know this network cold. Time to go knock some doors.'
+    :pct>=60?'Solid foundation. Review a few definitions and run it again.'
+    :'Keep at it — knowing the equipment makes you a sharper closer.';
+  return`<div class="screen" style="padding-top:32px;gap:20px;text-align:center;">
+    <div class="game-title" style="font-size:clamp(16px,4vw,28px);">NETWORK<br>COMPLETE</div>
+    <div class="result-stars">${stars()}</div>
+    <div class="result-label">FINAL SCORE</div>
+    <div class="result-score">${S.score}<span style="font-size:18px;color:#5A7690;"> / ${max}</span></div>
+    <div class="result-msg">${msg}</div>
+    <div class="result-btns">
+      <button class="btn-primary" style="font-size:11px;padding:13px 24px;" onclick="init();startGame()">PLAY AGAIN</button>
+      <a href="index.html" class="btn-secondary">← PORTAL</a>
+    </div>
+  </div>`;
+}
+
+// ── EVENTS ───────────────────────────────────────────────────────────
+function bind(){
+  document.querySelectorAll('#choices .choice').forEach(c=>c.addEventListener('click',()=>pickBuild(c.dataset.id,c)));
+  document.querySelectorAll('#qchoices .choice').forEach(c=>c.addEventListener('click',()=>pickQuiz(parseInt(c.dataset.qi),c)));
+}
+
+function showFeedback(isOk, head, body, isErr=!isOk){
+  const fb=document.getElementById('fb');
+  const fbH=document.getElementById('fbHead');
+  const fbB=document.getElementById('fbBody');
+  const nxt=document.getElementById('nxt');
+  fb.classList.add('show');
+  fb.classList.toggle('err',isErr);
+  fbH.className='feedback-head '+(isOk?'ok':'err');
+  fbH.textContent=head;
+  fbB.innerHTML=body;
+  if(isOk) nxt.classList.add('show');
+}
+
+function pickBuild(id, card){
+  if(S.answered)return;
+  const cur=BUILD_PATH[S.step];
+  if(id===cur.id){
+    const pts=Math.max(100-S.wrong*25,10);
+    S.score+=pts; S.answered=true;
+    S.placed.push(cur.id);
+    card.classList.add('correct');
+    document.getElementById('nc-'+cur.id)?.classList.replace('active','done');
+    showFeedback(true,`+${pts} POINTS`,`<strong>${cur.name}</strong> — ${cur.def}`);
+    updateScore();
+  } else {
+    S.wrong++;
+    card.classList.add('wrong');
+    setTimeout(()=>card.classList.remove('wrong'),400);
+    const w=BUILD_PATH.find(e=>e.id===id);
+    showFeedback(false,'NOT QUITE',`<strong>${w?.name}</strong> goes elsewhere. Try again.`);
+  }
+}
+
+function pickQuiz(idx, card){
+  if(S.qAnswered)return;
+  const q=S.quiz[S.qIdx];
+  const chosen=S.qChoices[idx];
+  if(chosen.id===q.id){
+    const pts=Math.max(100-S.qWrong*25,10);
+    S.score+=pts; S.qAnswered=true;
+    card.classList.add('correct');
+    showFeedback(true,`+${pts} POINTS`,`<strong>${q.name}</strong> — ${q.def}`);
+    updateScore();
+  } else {
+    S.qWrong++;
+    card.classList.add('wrong');
+    setTimeout(()=>card.classList.remove('wrong'),400);
+    showFeedback(false,'NOT QUITE','That\'s not the right definition. Re-read the options and try again.');
+  }
+}
+
+function nextStep(){
+  S.answered=false; S.wrong=0; S.step++;
+  if(S.step>=BUILD_PATH.length){ startQuiz(); return; }
+  S.choices=buildChoices(BUILD_PATH[S.step].id);
+  render();
+}
+
+function nextQuiz(){
+  S.qAnswered=false; S.qWrong=0; S.qIdx++;
+  if(S.qIdx>=QUIZ_COUNT){ S.phase='results'; render(); return; }
+  S.qChoices=quizChoices(S.quiz[S.qIdx]);
+  render();
+}
+
+init();
+render();
+</script>
+</body>
+</html>
