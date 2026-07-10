@@ -400,6 +400,13 @@ async function applyMigrations(){
   const order = ['onboarding','foundations','in-the-field','ongoing'];
   content.stages.sort((a,b)=>(order.indexOf(a.id)+1||99)-(order.indexOf(b.id)+1||99));
 
+  // Add Chrome download links if missing
+  const chrome = content.modules.find(m=>m.id==='seed_chrome');
+  if(chrome && !chrome.description.includes('apps.apple.com')){
+    chrome.description = 'Our software — CXP and Salesforce — are optimized to run on Google Chrome. Always use Chrome for work.\n\n⚠️ DO NOT use the Salesforce app. Instead, open Salesforce in Chrome and select "Request Desktop Site" from the browser dropdown.\n\nApple App Store:\nhttps://apps.apple.com/us/app/google-chrome/id535886823\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.android.chrome';
+    changed = true;
+  }
+
   // Clean up welcome module description
   const welcome = content.modules.find(m=>m.id==='welcome');
   if(welcome && welcome.description && welcome.description.includes("recruiter hasn't added")){
@@ -421,7 +428,7 @@ async function applyMigrations(){
 
   const onboardingModules = [
     {id:'seed_knockvia', stageId:'onboarding', topics:['Apps','Setup'], title:'KnockVia', url:'', description:'Download the KnockVia app — this is the tool you\'ll use to manage your door-to-door canvassing territory.\n\nApple App Store:\nhttps://apps.apple.com/us/app/knockvia/id6737631914\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.knockvia&pcampaignid=web_share', duration:''},
-    {id:'seed_chrome', stageId:'onboarding', topics:['Software','Setup'], title:'Google Chrome', url:'', description:'Our software — CXP and Salesforce — are optimized to run on Google Chrome. Always use Chrome for work.\n\n⚠️ DO NOT use the Salesforce app. Instead, open Salesforce in Chrome and select "Request Desktop Site" from the browser dropdown.', duration:''},
+    {id:'seed_chrome', stageId:'onboarding', topics:['Software','Setup'], title:'Google Chrome', url:'', description:'Our software — CXP and Salesforce — are optimized to run on Google Chrome. Always use Chrome for work.\n\n⚠️ DO NOT use the Salesforce app. Instead, open Salesforce in Chrome and select "Request Desktop Site" from the browser dropdown.\n\nApple App Store:\nhttps://apps.apple.com/us/app/google-chrome/id535886823\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.android.chrome', duration:''},
     {id:'seed_authenticator', stageId:'onboarding', topics:['Apps','Setup'], title:'Microsoft Authenticator', url:'', description:'Required for logging into company systems. Download and set up the Microsoft Authenticator app before your first day.\n\nApple App Store:\nhttps://apps.apple.com/us/app/microsoft-authenticator/id983156458\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.azure.authenticator&pcampaignid=web_share', duration:''}
   ];
 
