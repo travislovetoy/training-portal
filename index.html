@@ -90,65 +90,92 @@
   .rail{
     width:250px;
     flex-shrink:0;
-    padding:0 18px 40px;
+    padding:28px 18px 40px;
     border-right:1px dashed var(--line);
   }
 
-  /* Neighborhood */
-  .nbhood{
-    position:relative;width:calc(100% + 36px);margin:0 -18px 20px;
-    height:260px;background:#2D4A20;overflow:hidden;flex-shrink:0;
-    border-bottom:2px solid var(--line);
+  /* ── Neighborhood panel (fixed left strip) ── */
+  .nbpanel{
+    position:fixed;left:0;top:0;width:100px;height:100vh;z-index:40;
+    background:#2D4A20;overflow-y:auto;overflow-x:hidden;
+    box-shadow:3px 0 10px rgba(0,0,0,0.25);
+    scrollbar-width:none;
   }
-  /* grass texture */
-  .nbhood::before{
-    content:'';position:absolute;inset:0;
-    background-image:repeating-linear-gradient(90deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 12px),
-      repeating-linear-gradient(0deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 12px);
+  .nbpanel::-webkit-scrollbar{display:none;}
+  /* subtle grid texture */
+  .nbpanel::before{
+    content:'';position:fixed;left:0;top:0;width:100px;height:100vh;pointer-events:none;z-index:1;
+    background-image:repeating-linear-gradient(90deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 10px),
+      repeating-linear-gradient(0deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 10px);
   }
+  .nbscene{position:relative;width:100%;height:520px;min-height:100vh;}
+  /* dirt path */
   .nb-path{
     position:absolute;left:50%;transform:translateX(-50%);
-    width:30px;height:100%;background:#7A6548;
+    width:24px;height:100%;background:#7A6548;z-index:1;
   }
   .nb-path::after{
     content:'';position:absolute;left:50%;transform:translateX(-50%);
     width:3px;height:100%;
     background:repeating-linear-gradient(to bottom,#9B8365 0,#9B8365 7px,transparent 7px,transparent 14px);
   }
-  .nb-house{position:absolute;display:flex;flex-direction:column;align-items:center;}
-  .nb-house.nb-l{left:8px;}
-  .nb-house.nb-r{right:8px;}
+  /* houses */
+  .nb-house{
+    position:absolute;display:flex;flex-direction:column;align-items:center;
+    cursor:pointer;z-index:2;transition:filter .15s;
+  }
+  .nb-house:hover{filter:brightness(1.15);}
+  .nb-house.nb-l{left:3px;}
+  .nb-house.nb-r{right:3px;}
+  .nb-hwrap{position:relative;}
   .nb-roof{
     width:0;height:0;
-    border-left:26px solid transparent;
-    border-right:26px solid transparent;
-    border-bottom:18px solid #B84B27;
+    border-left:22px solid transparent;
+    border-right:22px solid transparent;
+    border-bottom:16px solid #B84B27;
   }
-  .nb-body{
-    width:52px;height:36px;
+  .nb-hbody{
+    width:44px;height:32px;
     background:#EFE8D6;border:2px solid #8B6040;position:relative;
   }
   .nb-door{
     position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-    width:13px;height:20px;background:#5B3A1E;border-radius:2px 2px 0 0;
+    width:11px;height:17px;background:#5B3A1E;border-radius:2px 2px 0 0;
   }
   .nb-win{
-    position:absolute;top:5px;width:11px;height:10px;
+    position:absolute;top:4px;width:9px;height:8px;
     background:#87CEEB;border:1.5px solid #5B7A8A;
   }
-  .nb-win-l{left:4px;} .nb-win-r{right:4px;}
-  /* salesman character */
+  .nb-wl{left:3px;} .nb-wr{right:3px;}
+  .nb-num{
+    position:absolute;top:-8px;right:-8px;
+    width:16px;height:16px;border-radius:50%;
+    background:#B84B27;color:#fff;
+    font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    border:1.5px solid #8F3A1E;z-index:3;
+  }
+  .nb-house.nb-r .nb-num{left:-8px;right:auto;}
+  .nb-hlabel{
+    font-family:'JetBrains Mono',monospace;font-size:7px;
+    color:rgba(255,255,255,0.55);text-align:center;margin-top:3px;
+    line-height:1.3;max-width:44px;
+  }
+  /* D2D salesman — ball cap + shorts */
   .nb-char{
     position:absolute;left:50%;transform:translateX(-50%);
     display:flex;flex-direction:column;align-items:center;
-    z-index:5;transition:top 0.75s cubic-bezier(0.4,0,0.2,1);
+    z-index:5;transition:top 0.8s cubic-bezier(0.4,0,0.2,1);
   }
-  .nb-head{width:10px;height:10px;background:#F5C89A;border:1.5px solid #8B5E3C;border-radius:2px;}
-  .nb-suit{width:13px;height:9px;background:#1C2B39;border:1.5px solid #0A1520;}
-  .nb-legs{display:flex;gap:2px;}
-  .nb-leg{width:4px;height:7px;background:#243B4F;transform-origin:top center;}
-  .nb-legs .nb-leg:first-child{animation:leg-a 0.42s ease-in-out infinite alternate;}
-  .nb-legs .nb-leg:last-child{animation:leg-b 0.42s ease-in-out infinite alternate;}
+  .nbc-brim{width:15px;height:3px;background:#1C2B39;margin-left:4px;border-radius:0 2px 2px 0;}
+  .nbc-cap{width:10px;height:6px;background:#1C2B39;border-radius:3px 3px 0 0;margin:-2px auto 0;}
+  .nbc-head{width:10px;height:9px;background:#F5C89A;border:1.5px solid #8B5E3C;border-radius:2px;margin:0 auto;}
+  .nbc-shirt{width:13px;height:8px;background:#D0E8FF;border:1.5px solid #90C0E0;margin:0 auto;}
+  .nbc-shorts{width:13px;height:6px;background:#4B6B9F;border:1.5px solid #2B4B7F;margin:0 auto;}
+  .nbc-legs{display:flex;gap:3px;justify-content:center;margin-top:1px;}
+  .nbc-leg{width:4px;height:8px;background:#F0C090;border-radius:1px;transform-origin:top center;}
+  .nbc-legs .nbc-leg:first-child{animation:leg-a .42s ease-in-out infinite alternate;}
+  .nbc-legs .nbc-leg:last-child{animation:leg-b .42s ease-in-out infinite alternate;}
   @keyframes leg-a{from{transform:rotate(-22deg);}to{transform:rotate(22deg);}}
   @keyframes leg-b{from{transform:rotate(22deg);}to{transform:rotate(-22deg);}}
   .rail h3{
@@ -301,13 +328,77 @@
   }
   .toast.show{opacity:1;}
 
-  @media (max-width: 800px){
+  body{padding-left:100px;}
+  header.top{margin-left:0;}
+  @media (max-width: 900px){
+    .nbpanel{display:none;}
+    body{padding-left:0;}
     .layout{flex-direction:column;}
     .rail{width:100%;border-right:none;border-bottom:1px dashed var(--line);}
   }
 </style>
 </head>
 <body>
+
+<div class="nbpanel" id="nbpanel">
+  <div class="nbscene">
+    <div class="nb-path"></div>
+
+    <div class="nb-house nb-l" data-stage="onboarding" style="top:35px">
+      <div class="nb-hwrap">
+        <div class="nb-roof" style="border-bottom-color:#B84B27"></div>
+        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
+        <div class="nb-num">1</div>
+      </div>
+      <div class="nb-hlabel">Onboard</div>
+    </div>
+
+    <div class="nb-house nb-r" data-stage="foundations" style="top:115px">
+      <div class="nb-hwrap">
+        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
+        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wr"></div></div>
+        <div class="nb-num">2</div>
+      </div>
+      <div class="nb-hlabel">Found.</div>
+    </div>
+
+    <div class="nb-house nb-l" data-stage="fiber-equipment" style="top:198px">
+      <div class="nb-hwrap">
+        <div class="nb-roof" style="border-bottom-color:#4B6B4F"></div>
+        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
+        <div class="nb-num">3</div>
+      </div>
+      <div class="nb-hlabel">Equip.</div>
+    </div>
+
+    <div class="nb-house nb-r" data-stage="in-the-field" style="top:280px">
+      <div class="nb-hwrap">
+        <div class="nb-roof" style="border-bottom-color:#B84B27"></div>
+        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wr"></div></div>
+        <div class="nb-num">4</div>
+      </div>
+      <div class="nb-hlabel">Field</div>
+    </div>
+
+    <div class="nb-house nb-l" data-stage="ongoing" style="top:362px">
+      <div class="nb-hwrap">
+        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
+        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
+        <div class="nb-num">5</div>
+      </div>
+      <div class="nb-hlabel">Ongoing</div>
+    </div>
+
+    <div class="nb-char" id="nbChar" style="top:10px">
+      <div class="nbc-brim"></div>
+      <div class="nbc-cap"></div>
+      <div class="nbc-head"></div>
+      <div class="nbc-shirt"></div>
+      <div class="nbc-shorts"></div>
+      <div class="nbc-legs"><div class="nbc-leg"></div><div class="nbc-leg"></div></div>
+    </div>
+  </div>
+</div>
 
 <header class="top">
   <div class="brand">
@@ -325,35 +416,7 @@
 
 <div class="layout">
   <aside class="rail">
-    <div class="nbhood">
-      <div class="nb-path"></div>
-      <div class="nb-house nb-l" style="top:8px">
-        <div class="nb-roof"></div>
-        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
-      </div>
-      <div class="nb-house nb-r" style="top:58px">
-        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
-        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-r"></div></div>
-      </div>
-      <div class="nb-house nb-l" style="top:110px">
-        <div class="nb-roof" style="border-bottom-color:#4B6B4F"></div>
-        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
-      </div>
-      <div class="nb-house nb-r" style="top:160px">
-        <div class="nb-roof"></div>
-        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-r"></div></div>
-      </div>
-      <div class="nb-house nb-l" style="top:208px">
-        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
-        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
-      </div>
-      <div class="nb-char" id="nbChar" style="top:4px">
-        <div class="nb-head"></div>
-        <div class="nb-suit"></div>
-        <div class="nb-legs"><div class="nb-leg"></div><div class="nb-leg"></div></div>
-      </div>
-    </div>
-    <h3 style="padding-top:8px;">Stages</h3>
+    <h3>Stages</h3>
     <div id="stageList"></div>
 
     <a href="game.html" style="
@@ -652,10 +715,21 @@ function saveContent(){
   return window.storage.set(CONTENT_KEY, JSON.stringify(content), true);
 }
 
-const NB_POS={'all':4,'onboarding':12,'foundations':62,'fiber-equipment':114,'in-the-field':164,'ongoing':212};
+const NB_POS={'all':10,'onboarding':42,'foundations':122,'fiber-equipment':205,'in-the-field':287,'ongoing':369};
 function updateNbChar(){
   const el=document.getElementById('nbChar');
-  if(el) el.style.top=(NB_POS[selectedStage]??4)+'px';
+  if(el) el.style.top=(NB_POS[selectedStage]??10)+'px';
+}
+function initNeighborhood(){
+  document.querySelectorAll('.nb-house[data-stage]').forEach(house=>{
+    house.addEventListener('click',()=>{
+      selectedStage=house.dataset.stage;
+      render();
+      // scroll the panel to keep character in view
+      const charTop=NB_POS[selectedStage]??10;
+      document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,charTop-80),behavior:'smooth'});
+    });
+  });
 }
 
 function render(){
@@ -901,6 +975,7 @@ document.getElementById('saveModule').addEventListener('click', async ()=>{
 });
 
 loadContent();
+initNeighborhood();
 </script>
 
 </body>
