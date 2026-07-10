@@ -202,6 +202,7 @@
     position:relative;width:100%;padding-top:56.25%;background:var(--ink);border-radius:var(--radius);overflow:hidden;
   }
   .video-embed iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}
+  .video-embed img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border:0;}
   .video-embed.text-only{padding-top:0;background:var(--canvas-2);border:1px dashed var(--line);}
   .video-embed.text-only .textbody{padding:16px;font-size:13.5px;color:var(--ink);white-space:pre-wrap;}
 
@@ -448,13 +449,31 @@ async function applyMigrations(){
     {id:'seed_ont', stageId:'fiber-equipment', topics:['Equipment'], title:'Optical Network Terminal (ONT)', url:'', description:'The box installed at the customer\'s home that converts the fiber optic light signal into an ethernet signal a router can use. Often called a "fiber modem" — it\'s the handoff point between the provider\'s network and the customer\'s devices.', duration:''},
     {id:'seed_cat6', stageId:'fiber-equipment', topics:['Equipment'], title:'CAT 6 Cable', url:'', description:'A copper ethernet cable used to connect devices inside the home. It supports speeds up to 10 Gbps and is the standard cable used to connect the ONT to a router.', duration:''},
     {id:'seed_router', stageId:'fiber-equipment', topics:['Equipment'], title:'Router', url:'', description:'Takes the internet signal from the ONT and distributes it to devices in the home — wirelessly via Wi-Fi and through wired ethernet ports. It also manages the local network and assigns IP addresses to each device.', duration:''},
-    {id:'seed_mesh', stageId:'fiber-equipment', topics:['Equipment'], title:'Mesh System', url:'', description:'Multiple wireless nodes placed around a home that work together as one seamless Wi-Fi network. Unlike a single router, a mesh system eliminates dead zones and automatically routes devices to the strongest signal.', duration:''}
+    {id:'seed_mesh', stageId:'fiber-equipment', topics:['Equipment'], title:'Mesh System', url:'', description:'Multiple wireless nodes placed around a home that work together as one seamless Wi-Fi network. Unlike a single router, a mesh system eliminates dead zones and automatically routes devices to the strongest signal.', duration:''},
+    {id:'seed_wifi7', stageId:'fiber-equipment', topics:['Equipment','Wi-Fi'], title:'Wi-Fi 7 (802.11be)', url:'', description:'The latest generation of Wi-Fi, capable of speeds up to 46 Gbps — roughly 4x faster than Wi-Fi 6. Key benefits:\n\n• Uses all three bands (2.4GHz, 5GHz, 6GHz) at the same time\n• Lower latency — better for gaming, video calls, and streaming\n• Handles more devices simultaneously without slowdown\n• Reduces interference in apartments or dense neighborhoods\n\nPaired with Ziply\'s fiber speeds, Wi-Fi 7 means customers actually experience the full speed they\'re paying for.', duration:''}
   ];
 
   equipmentModules.forEach((m,i)=>{
     if(!content.modules.find(x=>x.id===m.id)){
       m.order=content.modules.length+i; content.modules.push(m); changed=true;
     }
+  });
+
+  const equipmentImages = {
+    'seed_colo':'colocation.jpeg',
+    'seed_mspt':'mspt.jpeg',
+    'seed_ext-tray':'exterior-fiber-tray.jpeg',
+    'seed_splice':'fiber-splice.jpg',
+    'seed_int-tray':'interior-fiber-tray.jpeg',
+    'seed_ont':'ont.jpeg',
+    'seed_cat6':'cat6.jpeg',
+    'seed_router':'router.jpeg',
+    'seed_mesh':'mesh.jpeg',
+    'seed_wifi7':'wifi-7.png'
+  };
+  Object.entries(equipmentImages).forEach(([id,img])=>{
+    const mod = content.modules.find(m=>m.id===id);
+    if(mod && mod.img !== img){ mod.img = img; changed=true; }
   });
 
   if(changed){
@@ -567,7 +586,9 @@ function renderGrid(){
     const emb = embedFor(m.url);
     const isDone = completed.has(m.id);
     let mediaHtml = '';
-    if(m.url && emb){
+    if(m.img){
+      mediaHtml = `<div class="video-embed"><img src="${m.img}" alt="${escapeHtml(m.title)}" loading="lazy"></div>`;
+    } else if(m.url && emb){
       mediaHtml = `<div class="video-embed"><iframe src="${emb}" allowfullscreen loading="lazy"></iframe></div>`;
     } else if(m.url){
       mediaHtml = `<div class="video-embed text-only"><div class="textbody">Link: <a href="${m.url}" target="_blank" rel="noopener">${m.url}</a></div></div>`;
