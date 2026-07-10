@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manager Dashboard — Field Book</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0F1923;color:#D9E3EB;min-height:100vh;}
+
+  /* Header */
+  .header{background:#1C2B39;border-bottom:2px solid #2D4A5E;padding:16px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10;}
+  .header h1{font-size:1.1rem;font-weight:700;color:#D9E3EB;letter-spacing:.05em;text-transform:uppercase;}
+  .header .sub{font-size:.8rem;color:#7A9BB0;margin-left:auto;}
+  .back-link{color:#7A9BB0;text-decoration:none;font-size:.85rem;padding:6px 12px;border:1px solid #2D4A5E;border-radius:6px;}
+  .back-link:hover{color:#D9E3EB;border-color:#4A7A9B;}
+
+  /* Gate */
+  #gate{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+  .gate-card{background:#1C2B39;border:1px solid #2D4A5E;border-radius:12px;padding:40px;text-align:center;width:340px;}
+  .gate-card h2{font-size:1.1rem;margin-bottom:8px;color:#D9E3EB;}
+  .gate-card p{font-size:.85rem;color:#7A9BB0;margin-bottom:20px;}
+  .gate-card input{width:100%;padding:10px 14px;background:#0F1923;border:1px solid #2D4A5E;border-radius:8px;color:#D9E3EB;font-size:.95rem;margin-bottom:12px;outline:none;}
+  .gate-card input:focus{border-color:#4A7A9B;}
+  .btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:.9rem;font-weight:600;}
+  .btn-primary{background:#2D6A8F;color:#fff;width:100%;}
+  .btn-primary:hover{background:#3A85B0;}
+  .error-msg{color:#E07070;font-size:.82rem;margin-top:8px;}
+
+  /* Dashboard */
+  #dashboard{display:none;padding:28px;}
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
+  .stat-card{background:#1C2B39;border:1px solid #2D4A5E;border-radius:10px;padding:20px;text-align:center;}
+  .stat-card .num{font-size:2rem;font-weight:700;color:#6BBDE8;}
+  .stat-card .label{font-size:.78rem;color:#7A9BB0;margin-top:4px;text-transform:uppercase;letter-spacing:.06em;}
+
+  /* Rep table */
+  .section-title{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7A9BB0;margin-bottom:14px;}
+  .rep-grid{display:grid;gap:12px;}
+  .rep-card{background:#1C2B39;border:1px solid #2D4A5E;border-radius:10px;padding:18px 20px;display:grid;grid-template-columns:44px 1fr auto;gap:0 14px;align-items:center;cursor:pointer;transition:border-color .15s;}
+  .rep-card:hover{border-color:#4A7A9B;}
+  .rep-card.expanded{border-color:#2D6A8F;}
+  .avatar{width:44px;height:44px;border-radius:50%;background:#2D4A5E;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#6BBDE8;overflow:hidden;flex-shrink:0;}
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .rep-info .name{font-weight:600;font-size:.95rem;color:#D9E3EB;}
+  .rep-info .email{font-size:.78rem;color:#7A9BB0;margin-top:2px;}
+  .rep-info .last-active{font-size:.73rem;color:#5A7A90;margin-top:3px;}
+  .rep-right{text-align:right;flex-shrink:0;}
+  .rep-right .count{font-size:1.1rem;font-weight:700;color:#6BBDE8;}
+  .rep-right .total{font-size:.75rem;color:#7A9BB0;}
+  .rep-right .pct{font-size:.75rem;color:#7A9BB0;margin-top:2px;}
+  .prog-bar-wrap{grid-column:2/-1;margin-top:10px;}
+  .prog-bar{height:6px;background:#0F1923;border-radius:4px;overflow:hidden;}
+  .prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#2D6A8F,#6BBDE8);transition:width .4s;}
+
+  /* Expanded module list */
+  .module-details{display:none;grid-column:1/-1;margin-top:14px;padding-top:14px;border-top:1px solid #2D4A5E;}
+  .module-details.open{display:block;}
+  .stage-group{margin-bottom:12px;}
+  .stage-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#7A9BB0;margin-bottom:6px;}
+  .mod-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .mod-chip{font-size:.75rem;padding:3px 10px;border-radius:20px;border:1px solid;}
+  .mod-chip.done{background:#1A3A1A;border-color:#3A6A3A;color:#7ABA7A;}
+  .mod-chip.todo{background:#1C2B39;border-color:#2D4A5E;color:#5A7A90;}
+
+  /* Empty state */
+  .empty{text-align:center;padding:60px 20px;color:#5A7A90;}
+  .empty .icon{font-size:3rem;margin-bottom:12px;}
+
+  /* Loading */
+  .loading{text-align:center;padding:60px;color:#5A7A90;font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back-link">← Portal</a>
+  <h1>Manager Dashboard</h1>
+  <span class="sub" id="headerSub"></span>
+</div>
+
+<!-- Admin gate -->
+<div id="gate">
+  <div class="gate-card">
+    <h2>Manager Access</h2>
+    <p>Enter your admin passcode to view rep progress.</p>
+    <input type="password" id="codeInput" placeholder="Passcode" onkeydown="if(event.key==='Enter')checkCode()">
+    <button class="btn btn-primary" onclick="checkCode()">Enter</button>
+    <div class="error-msg" id="gateError"></div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="stats-row" id="statsRow"></div>
+  <div class="section-title">Rep Progress</div>
+  <div class="rep-grid" id="repGrid">
+    <div class="loading">Loading rep data…</div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://chpuzcpyxprmedcambqq.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_mavHSabzoejg_zjl2IuIIg_H4KbE_gQ';
+const ADMIN_CODE    = 'openthedoor';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Module metadata for display — mirrors the portal's content
+const STAGE_ORDER = ['onboarding','foundations','fiber-equipment','in-the-field','ongoing'];
+const STAGE_NAMES = {
+  'onboarding':'Onboarding',
+  'foundations':'Foundations',
+  'fiber-equipment':'Fiber Equipment & Definitions',
+  'in-the-field':'In the Field',
+  'ongoing':'Ongoing / Advanced'
+};
+
+function checkCode(){
+  const val = document.getElementById('codeInput').value.trim();
+  if(val !== ADMIN_CODE){
+    document.getElementById('gateError').textContent = 'Incorrect passcode.';
+    return;
+  }
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadDashboard();
+}
+
+document.getElementById('codeInput').focus();
+
+async function loadDashboard(){
+  // Need sign-in to read Supabase data
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){
+    document.getElementById('repGrid').innerHTML = `
+      <div class="empty">
+        <div class="icon">🔒</div>
+        <div>You need to be signed in to view rep data.</div>
+        <button class="btn btn-primary" style="margin-top:16px;width:auto;padding:10px 24px;" onclick="signIn()">Sign in with Google</button>
+      </div>`;
+    return;
+  }
+
+  const [profilesRes, progressRes] = await Promise.all([
+    sb.from('profiles').select('*'),
+    sb.from('user_progress').select('*')
+  ]);
+
+  const profiles = profilesRes.data || [];
+  const progress = progressRes.data || [];
+
+  // Build a map of userId → completed modules
+  const progressMap = {};
+  progress.forEach(p => { progressMap[p.user_id] = p; });
+
+  // Get all module IDs from the portal content key in localStorage
+  // We'll use the known module list from the portal
+  const allModules = getAllModuleIds();
+
+  // Merge profiles with progress
+  const reps = profiles.map(p => ({
+    ...p,
+    completed: new Set(progressMap[p.user_id]?.completed_modules || []),
+    updatedAt: progressMap[p.user_id]?.updated_at || null
+  }));
+
+  reps.sort((a,b) => b.completed.size - a.completed.size);
+
+  renderStats(reps, allModules.length);
+  renderReps(reps, allModules);
+}
+
+function getAllModuleIds(){
+  // Load from localStorage if the portal has been opened on this device
+  // Otherwise return known module list
+  try {
+    const raw = localStorage.getItem('fieldbook_content');
+    if(raw){
+      const c = JSON.parse(raw);
+      return (c.modules || []).map(m => ({id: m.id, title: m.title, stageId: m.stageId, order: m.order||0}));
+    }
+  } catch(e){}
+  return [];
+}
+
+function renderStats(reps, total){
+  const active = reps.filter(r => r.completed.size > 0).length;
+  const avgPct = reps.length
+    ? Math.round(reps.reduce((s,r) => s + (total ? r.completed.size/total : 0), 0) / reps.length * 100)
+    : 0;
+  const finished = reps.filter(r => total && r.completed.size >= total).length;
+
+  document.getElementById('headerSub').textContent = `${reps.length} rep${reps.length!==1?'s':''} tracked`;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${reps.length}</div><div class="label">Total Reps</div></div>
+    <div class="stat-card"><div class="num">${active}</div><div class="label">Active</div></div>
+    <div class="stat-card"><div class="num">${avgPct}%</div><div class="label">Avg Completion</div></div>
+    <div class="stat-card"><div class="num">${finished}</div><div class="label">100% Complete</div></div>
+    <div class="stat-card"><div class="num">${total}</div><div class="label">Total Modules</div></div>
+  `;
+}
+
+function renderReps(reps, allModules){
+  if(reps.length === 0){
+    document.getElementById('repGrid').innerHTML = `
+      <div class="empty">
+        <div class="icon">👤</div>
+        <div>No reps have signed in yet.</div>
+      </div>`;
+    return;
+  }
+
+  const total = allModules.length;
+
+  // Group modules by stage
+  const byStage = {};
+  STAGE_ORDER.forEach(s => byStage[s] = []);
+  allModules.forEach(m => {
+    if(byStage[m.stageId]) byStage[m.stageId].push(m);
+    else byStage['onboarding'] = byStage['onboarding'] || [];
+  });
+
+  document.getElementById('repGrid').innerHTML = reps.map((rep, i) => {
+    const count = rep.completed.size;
+    const pct = total ? Math.round(count / total * 100) : 0;
+    const initials = (rep.display_name || rep.email || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const lastActive = rep.updatedAt
+      ? new Date(rep.updatedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : 'Never';
+
+    const stageBreakdown = STAGE_ORDER.map(stageId => {
+      const mods = byStage[stageId] || [];
+      if(!mods.length) return '';
+      const chips = mods.map(m =>
+        `<span class="mod-chip ${rep.completed.has(m.id)?'done':'todo'}">${rep.completed.has(m.id)?'✓ ':''} ${m.title}</span>`
+      ).join('');
+      return `<div class="stage-group">
+        <div class="stage-label">${STAGE_NAMES[stageId]||stageId}</div>
+        <div class="mod-chips">${chips}</div>
+      </div>`;
+    }).join('');
+
+    const avatarHtml = rep.avatar_url
+      ? `<img src="${rep.avatar_url}" alt="">`
+      : initials;
+
+    return `
+      <div class="rep-card" id="rep-${i}" onclick="toggleRep(${i})">
+        <div class="avatar">${avatarHtml}</div>
+        <div class="rep-info">
+          <div class="name">${rep.display_name || rep.email}</div>
+          <div class="email">${rep.email}</div>
+          <div class="last-active">Last active: ${lastActive}</div>
+        </div>
+        <div class="rep-right">
+          <div class="count">${count}</div>
+          <div class="total">of ${total} modules</div>
+          <div class="pct">${pct}%</div>
+        </div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="module-details" id="details-${i}">
+          ${stageBreakdown || '<div style="color:#5A7A90;font-size:.82rem;">Open the portal on this device first to load module names.</div>'}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleRep(i){
+  const card = document.getElementById(`rep-${i}`);
+  const details = document.getElementById(`details-${i}`);
+  card.classList.toggle('expanded');
+  details.classList.toggle('open');
+}
+
+async function signIn(){
+  await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{ redirectTo: window.location.href }
+  });
+}
+</script>
+</body>
+</html>

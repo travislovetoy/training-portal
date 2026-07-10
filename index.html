@@ -368,6 +368,7 @@
     <button class="btn ghost-light small" id="signInBtn" onclick="signInWithGoogle()">&#9654; Sign in with Google</button>
     <button class="btn ghost-light small" id="signOutBtn" style="display:none;" onclick="signOut()">Sign out</button>
     <a href="game.html" class="btn ghost-light small" style="text-decoration:none;">&#9654; Play Game</a>
+    <a href="dashboard.html" class="btn ghost-light small" style="text-decoration:none;">&#9776; Dashboard</a>
     <button class="btn solid small" id="adminBtn">+ Add training</button>
   </div>
 </header>
@@ -502,6 +503,7 @@ async function loadContent(){
     if(session){
       viewerUserId = session.user.id;
       setUserUI(session.user.email);
+      await upsertProfile(session.user);
       await loadProgress();
     }
     // Listen for future sign-in/sign-out events
@@ -509,6 +511,7 @@ async function loadContent(){
       if(session){
         viewerUserId = session.user.id;
         setUserUI(session.user.email);
+        await upsertProfile(session.user);
         await loadProgress();
         render(); buildNeighborhood(); restoreSalesmanPosition();
       }
@@ -947,6 +950,17 @@ function setUserUI(email){
   document.getElementById('viewerLabel').textContent = `Signed in as ${email} —`;
   document.getElementById('signInBtn').style.display = 'none';
   document.getElementById('signOutBtn').style.display = '';
+}
+
+async function upsertProfile(user){
+  if(!sb || !user) return;
+  await sb.from('profiles').upsert({
+    user_id: user.id,
+    display_name: user.user_metadata?.full_name || user.email,
+    email: user.email,
+    avatar_url: user.user_metadata?.avatar_url || null,
+    updated_at: new Date().toISOString()
+  }, {onConflict:'user_id'});
 }
 
 async function signInWithGoogle(){
