@@ -411,6 +411,18 @@ async function applyMigrations(){
     if(stageMap[m.stageId]){ m.stageId=stageMap[m.stageId]; changed=true; }
   });
 
+  const onboardingModules = [
+    {id:'seed_knockvia', stageId:'onboarding', topics:['Apps','Setup'], title:'KnockVia', url:'', description:'Download the KnockVia app — this is the tool you\'ll use to manage your door-to-door canvassing territory.\n\nApple App Store:\nhttps://apps.apple.com/us/app/knockvia/id6737631914\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.knockvia&pcampaignid=web_share', duration:''},
+    {id:'seed_chrome', stageId:'onboarding', topics:['Software','Setup'], title:'Google Chrome', url:'', description:'Our software — CXP and Salesforce — are optimized to run on Google Chrome. Always use Chrome for work.\n\n⚠️ DO NOT use the Salesforce app. Instead, open Salesforce in Chrome and select "Request Desktop Site" from the browser dropdown.', duration:''},
+    {id:'seed_authenticator', stageId:'onboarding', topics:['Apps','Setup'], title:'Microsoft Authenticator', url:'', description:'Required for logging into company systems. Download and set up the Microsoft Authenticator app before your first day.\n\nApple App Store:\nhttps://apps.apple.com/us/app/microsoft-authenticator/id983156458\n\nGoogle Play:\nhttps://play.google.com/store/apps/details?id=com.azure.authenticator&pcampaignid=web_share', duration:''}
+  ];
+
+  onboardingModules.forEach((m,i)=>{
+    if(!content.modules.find(x=>x.id===m.id)){
+      m.order=content.modules.length+i; content.modules.push(m); changed=true;
+    }
+  });
+
   const foundationsModules = [
     {id:'seed_internet-basics', stageId:'foundations', topics:['Internet Basics'], title:'Internet Basics', url:'https://youtu.be/7_LPdttKXPc?si=s6lpm2uc9Ld-5iIO', description:'', duration:''},
     {id:'seed_internet-types', stageId:'foundations', topics:['Internet Basics'], title:'Internet Types', url:'https://www.youtube.com/watch?v=Ll_LUl96bYA', description:'', duration:''},
@@ -606,7 +618,7 @@ function renderGrid(){
       <div class="stage-tag">${stage ? stage.name : ''}</div>
       <h4>${escapeHtml(m.title)}</h4>
       ${mediaHtml}
-      <div class="desc">${escapeHtml(m.description||'').replace(/\n/g,'<br>')}</div>
+      <div class="desc">${linkify(m.description||'').replace(/\n/g,'<br>')}</div>
       <div class="tags">${(m.topics||[]).map(t=>`<span>${escapeHtml(t)}</span>`).join('')}</div>
       <div class="meta">
         <span class="duration">${m.duration ? escapeHtml(m.duration) : ''}</span>
@@ -629,6 +641,9 @@ function renderGrid(){
 
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function linkify(s){
+  return escapeHtml(s).replace(/https?:\/\/[^\s<]+/g, url=>`<a href="${url}" target="_blank" rel="noopener" style="color:var(--rust);word-break:break-all;">${url}</a>`);
 }
 
 function toggleComplete(id, isDone, cardEl){
