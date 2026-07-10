@@ -161,6 +161,9 @@
     color:rgba(255,255,255,0.55);text-align:center;margin-top:3px;
     line-height:1.3;max-width:44px;
   }
+  .nb-house.nb-done .nb-hbody{background:#C8D8A8;}
+  .nb-house.nb-done .nb-roof{filter:brightness(0.7);}
+  .nb-sold{position:absolute;bottom:2px;right:2px;font-size:9px;color:#3A5A2A;font-weight:900;}
   /* D2D salesman — ball cap + shorts */
   .nb-char{
     position:absolute;left:50%;transform:translateX(-50%);
@@ -341,54 +344,8 @@
 <body>
 
 <div class="nbpanel" id="nbpanel">
-  <div class="nbscene">
+  <div class="nbscene" id="nbscene">
     <div class="nb-path"></div>
-
-    <div class="nb-house nb-l" data-stage="onboarding" style="top:35px">
-      <div class="nb-hwrap">
-        <div class="nb-roof" style="border-bottom-color:#B84B27"></div>
-        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
-        <div class="nb-num">1</div>
-      </div>
-      <div class="nb-hlabel">Onboard</div>
-    </div>
-
-    <div class="nb-house nb-r" data-stage="foundations" style="top:115px">
-      <div class="nb-hwrap">
-        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
-        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wr"></div></div>
-        <div class="nb-num">2</div>
-      </div>
-      <div class="nb-hlabel">Found.</div>
-    </div>
-
-    <div class="nb-house nb-l" data-stage="fiber-equipment" style="top:198px">
-      <div class="nb-hwrap">
-        <div class="nb-roof" style="border-bottom-color:#4B6B4F"></div>
-        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
-        <div class="nb-num">3</div>
-      </div>
-      <div class="nb-hlabel">Equip.</div>
-    </div>
-
-    <div class="nb-house nb-r" data-stage="in-the-field" style="top:280px">
-      <div class="nb-hwrap">
-        <div class="nb-roof" style="border-bottom-color:#B84B27"></div>
-        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wr"></div></div>
-        <div class="nb-num">4</div>
-      </div>
-      <div class="nb-hlabel">Field</div>
-    </div>
-
-    <div class="nb-house nb-l" data-stage="ongoing" style="top:362px">
-      <div class="nb-hwrap">
-        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
-        <div class="nb-hbody"><div class="nb-door"></div><div class="nb-win nb-wl"></div></div>
-        <div class="nb-num">5</div>
-      </div>
-      <div class="nb-hlabel">Ongoing</div>
-    </div>
-
     <div class="nb-char" id="nbChar" style="top:10px">
       <div class="nbc-brim"></div>
       <div class="nbc-cap"></div>
@@ -532,6 +489,7 @@ async function loadContent(){
   }
   await applyMigrations();
   render();
+  buildNeighborhood();
 }
 
 // One-time content additions. Each migration only applies if its modules
@@ -715,20 +673,61 @@ function saveContent(){
   return window.storage.set(CONTENT_KEY, JSON.stringify(content), true);
 }
 
-const NB_POS={'all':10,'onboarding':42,'foundations':122,'fiber-equipment':205,'in-the-field':287,'ongoing':369};
-function updateNbChar(){
-  const el=document.getElementById('nbChar');
-  if(el) el.style.top=(NB_POS[selectedStage]??10)+'px';
-}
-function initNeighborhood(){
-  document.querySelectorAll('.nb-house[data-stage]').forEach(house=>{
-    house.addEventListener('click',()=>{
-      selectedStage=house.dataset.stage;
+const NB_STAGE_ORDER=['onboarding','foundations','fiber-equipment','in-the-field','ongoing'];
+const NB_ROOF_COLORS={'onboarding':'#B84B27','foundations':'#A3874A','fiber-equipment':'#4B6B4F','in-the-field':'#B84B27','ongoing':'#1C2B39'};
+const NB_START=30, NB_GAP=68;
+
+function buildNeighborhood(){
+  const scene=document.getElementById('nbscene');
+  if(!scene) return;
+  scene.querySelectorAll('.nb-house').forEach(h=>h.remove());
+
+  const sorted=[...content.modules].sort((a,b)=>{
+    const si=NB_STAGE_ORDER.indexOf(a.stageId), bi=NB_STAGE_ORDER.indexOf(b.stageId);
+    if(si!==bi) return si-bi;
+    return (a.order??0)-(b.order??0);
+  });
+
+  const totalH=NB_START+sorted.length*NB_GAP+80;
+  scene.style.height=Math.max(totalH,window.innerHeight)+'px';
+  document.querySelector('.nb-path').style.height=Math.max(totalH,window.innerHeight)+'px';
+
+  const charEl=document.getElementById('nbChar');
+  sorted.forEach((mod,i)=>{
+    const y=NB_START+i*NB_GAP;
+    const isLeft=i%2===0;
+    const roof=NB_ROOF_COLORS[mod.stageId]||'#B84B27';
+    const done=completed.has(mod.id);
+    const short=mod.title.length>7?mod.title.slice(0,6)+'…':mod.title;
+
+    const h=document.createElement('div');
+    h.className=`nb-house ${isLeft?'nb-l':'nb-r'}${done?' nb-done':''}`;
+    h.dataset.moduleId=mod.id;
+    h.dataset.stageId=mod.stageId;
+    h.dataset.y=y;
+    h.style.top=y+'px';
+    h.innerHTML=`<div class="nb-hwrap">
+      <div class="nb-roof" style="border-bottom-color:${done?'#4B6B4F':roof}"></div>
+      <div class="nb-hbody">
+        <div class="nb-door"></div>
+        <div class="nb-win ${isLeft?'nb-wl':'nb-wr'}"></div>
+        ${done?'<div class="nb-sold">✓</div>':''}
+      </div>
+      <div class="nb-num">${i+1}</div>
+    </div>
+    <div class="nb-hlabel">${short}</div>`;
+
+    h.addEventListener('click',()=>{
+      if(charEl) charEl.style.top=(y+6)+'px';
+      document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,y-100),behavior:'smooth'});
+      selectedStage=mod.stageId;
       render();
-      // scroll the panel to keep character in view
-      const charTop=NB_POS[selectedStage]??10;
-      document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,charTop-80),behavior:'smooth'});
+      setTimeout(()=>{
+        document.querySelector(`.card[data-id="${mod.id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'});
+      },150);
     });
+
+    scene.insertBefore(h,charEl);
   });
 }
 
@@ -738,7 +737,6 @@ function render(){
   renderGrid();
   renderProgress();
   populateStageSelect();
-  updateNbChar();
 }
 
 function renderStageList(){
@@ -858,6 +856,7 @@ function toggleComplete(id, isDone, cardEl){
   const stamp = cardEl.querySelector('.stamp');
   stamp.classList.toggle('show', isDone);
   renderProgress();
+  buildNeighborhood();
   if(viewerName){
     saveProgress();
   } else {
@@ -975,7 +974,6 @@ document.getElementById('saveModule').addEventListener('click', async ()=>{
 });
 
 loadContent();
-initNeighborhood();
 </script>
 
 </body>
