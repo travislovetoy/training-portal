@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --navy:#1C2B39;
@@ -363,9 +364,9 @@
     <h1 class="display">The Field <span>Book</span></h1>
   </div>
   <div class="viewer-box mono" id="viewerBox">
-    <span id="viewerLabel" style="color:#D9E3EB;">Not tracking progress —</span>
-    <input type="text" id="nameInput" placeholder="your name" autocomplete="off">
-    <button class="btn ghost-light small" id="trackBtn">Save my progress</button>
+    <span id="viewerLabel" style="color:#D9E3EB;">Not signed in —</span>
+    <button class="btn ghost-light small" id="signInBtn" onclick="signInWithGoogle()">&#9654; Sign in with Google</button>
+    <button class="btn ghost-light small" id="signOutBtn" style="display:none;" onclick="signOut()">Sign out</button>
     <a href="game.html" class="btn ghost-light small" style="text-decoration:none;">&#9654; Play Game</a>
     <button class="btn solid small" id="adminBtn">+ Add training</button>
   </div>
@@ -454,13 +455,23 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const CONTENT_KEY = 'content';
-const ADMIN_CODE = 'openthedoor'; // change this string to set your own admin passcode
+// ── Supabase config — paste your keys here ──────────────────────────
+const SUPABASE_URL  = 'PASTE_YOUR_PROJECT_URL_HERE';
+const SUPABASE_ANON = 'PASTE_YOUR_ANON_KEY_HERE';
+// ────────────────────────────────────────────────────────────────────
+
+const sb = (SUPABASE_URL.startsWith('http'))
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
+  : null;  // keys not set yet — falls back to localStorage
+
+const CONTENT_KEY = 'fieldbook_content';
+const ADMIN_CODE = 'openthedoor';
 
 let content = { stages: [], modules: [] };
 let selectedStage = 'all';
 let selectedTopic = 'all';
 let viewerName = null;
+let viewerUserId = null;
 let completed = new Set();
 
 function toast(msg){
@@ -485,13 +496,23 @@ async function loadContent(){
   }
   await applyMigrations();
 
-  // Auto-restore saved viewer name and progress
-  const savedName = localStorage.getItem('viewer_name');
-  if(savedName){
-    viewerName = savedName;
-    document.getElementById('nameInput').value = savedName;
-    document.getElementById('viewerLabel').textContent = `Tracking as ${viewerName} —`;
-    await loadProgressForName(viewerName);
+  // Check for active Supabase session (handles OAuth redirect callback too)
+  if(sb){
+    const {data:{session}} = await sb.auth.getSession();
+    if(session){
+      viewerUserId = session.user.id;
+      setUserUI(session.user.email);
+      await loadProgress();
+    }
+    // Listen for future sign-in/sign-out events
+    sb.auth.onAuthStateChange(async (event, session)=>{
+      if(session){
+        viewerUserId = session.user.id;
+        setUserUI(session.user.email);
+        await loadProgress();
+        render(); buildNeighborhood(); restoreSalesmanPosition();
+      }
+    });
   }
 
   render();
@@ -874,11 +895,7 @@ function toggleComplete(id, isDone, cardEl){
       document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,y-100),behavior:'smooth'});
     }
   }
-  if(viewerName){
-    saveProgress();
-  } else {
-    toast('Checked off for this session. Enter your name above to save it.');
-  }
+  saveProgress();
 }
 
 function renderProgress(){
@@ -892,24 +909,65 @@ function renderProgress(){
   document.getElementById('progressPct').textContent = `${done} of ${total} complete`;
 }
 
-async function loadProgressForName(name){
-  try{
-    const raw = localStorage.getItem('progress:' + slug(name));
-    if(raw){ const data = JSON.parse(raw); completed = new Set(data.completed || []); }
-    else { completed = new Set(); }
-  }catch(e){ completed = new Set(); }
+async function loadProgress(){
+  if(sb && viewerUserId){
+    // Load from Supabase
+    const {data} = await sb.from('user_progress').select('completed_modules').eq('user_id', viewerUserId).maybeSingle();
+    completed = new Set(data?.completed_modules || []);
+  } else if(viewerName) {
+    // Fallback: localStorage
+    try{
+      const raw = localStorage.getItem('progress:' + slug(viewerName));
+      if(raw){ const d = JSON.parse(raw); completed = new Set(d.completed||[]); }
+      else completed = new Set();
+    }catch(e){ completed = new Set(); }
+  }
 }
 
-function saveProgress(){
-  if(!viewerName) return;
-  try{
-    localStorage.setItem('progress:' + slug(viewerName), JSON.stringify({
-      name: viewerName,
-      completed: Array.from(completed),
-      updatedAt: new Date().toISOString()
-    }));
-  }catch(e){ toast('Could not save progress — try again.'); }
+async function saveProgress(){
+  if(sb && viewerUserId){
+    await sb.from('user_progress').upsert({
+      user_id: viewerUserId,
+      completed_modules: Array.from(completed),
+      updated_at: new Date().toISOString()
+    }, {onConflict:'user_id'});
+  } else if(viewerName) {
+    try{
+      localStorage.setItem('progress:' + slug(viewerName), JSON.stringify({
+        completed: Array.from(completed), updatedAt: new Date().toISOString()
+      }));
+    }catch(e){}
+  } else {
+    toast('Sign in to save your progress.');
+  }
 }
+
+function setUserUI(email){
+  viewerName = email;
+  document.getElementById('viewerLabel').textContent = `Signed in as ${email} —`;
+  document.getElementById('signInBtn').style.display = 'none';
+  document.getElementById('signOutBtn').style.display = '';
+}
+
+async function signInWithGoogle(){
+  if(!sb){ toast('Supabase not configured yet.'); return; }
+  await sb.auth.signInWithOAuth({
+    provider:'google',
+    options:{ redirectTo: window.location.href }
+  });
+}
+
+async function signOut(){
+  if(sb) await sb.auth.signOut();
+  viewerName = null; viewerUserId = null; completed = new Set();
+  document.getElementById('viewerLabel').textContent = 'Not signed in —';
+  document.getElementById('signInBtn').style.display = '';
+  document.getElementById('signOutBtn').style.display = 'none';
+  render(); buildNeighborhood();
+}
+
+// Deprecated but kept for localStorage fallback path
+async function loadProgressForName(name){ viewerName=name; await loadProgress(); }
 
 function restoreSalesmanPosition(){
   if(completed.size === 0) return;
@@ -931,18 +989,6 @@ function populateStageSelect(){
 
 // --- Event wiring ---
 
-document.getElementById('trackBtn').addEventListener('click', async ()=>{
-  const val = document.getElementById('nameInput').value.trim();
-  if(!val){ toast('Type your name first.'); return; }
-  viewerName = val;
-  localStorage.setItem('viewer_name', viewerName);
-  document.getElementById('viewerLabel').textContent = `Tracking as ${viewerName} —`;
-  await loadProgressForName(viewerName);
-  render();
-  buildNeighborhood();
-  restoreSalesmanPosition();
-  toast(`Welcome back, ${viewerName}. Progress saves automatically.`);
-});
 
 document.getElementById('adminBtn').addEventListener('click', ()=>{
   const code = prompt('Admin passcode:');
