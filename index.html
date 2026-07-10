@@ -485,6 +485,16 @@ async function applyMigrations(){
     }
   });
 
+  const onboardingImages = {
+    'seed_knockvia':'Knock Via.webp',
+    'seed_chrome':'Google Chrome.webp',
+    'seed_authenticator':'Microsoft Authenticator .webp'
+  };
+  Object.entries(onboardingImages).forEach(([id,img])=>{
+    const mod = content.modules.find(m=>m.id===id);
+    if(mod && mod.img !== img){ mod.img = img; changed=true; }
+  });
+
   const equipmentImages = {
     'seed_olt':'olt.jpeg',
     'seed_colo':'colocation.jpeg',
