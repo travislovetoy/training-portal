@@ -90,9 +90,67 @@
   .rail{
     width:250px;
     flex-shrink:0;
-    padding:28px 18px 40px;
+    padding:0 18px 40px;
     border-right:1px dashed var(--line);
   }
+
+  /* Neighborhood */
+  .nbhood{
+    position:relative;width:calc(100% + 36px);margin:0 -18px 20px;
+    height:260px;background:#2D4A20;overflow:hidden;flex-shrink:0;
+    border-bottom:2px solid var(--line);
+  }
+  /* grass texture */
+  .nbhood::before{
+    content:'';position:absolute;inset:0;
+    background-image:repeating-linear-gradient(90deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 12px),
+      repeating-linear-gradient(0deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 12px);
+  }
+  .nb-path{
+    position:absolute;left:50%;transform:translateX(-50%);
+    width:30px;height:100%;background:#7A6548;
+  }
+  .nb-path::after{
+    content:'';position:absolute;left:50%;transform:translateX(-50%);
+    width:3px;height:100%;
+    background:repeating-linear-gradient(to bottom,#9B8365 0,#9B8365 7px,transparent 7px,transparent 14px);
+  }
+  .nb-house{position:absolute;display:flex;flex-direction:column;align-items:center;}
+  .nb-house.nb-l{left:8px;}
+  .nb-house.nb-r{right:8px;}
+  .nb-roof{
+    width:0;height:0;
+    border-left:26px solid transparent;
+    border-right:26px solid transparent;
+    border-bottom:18px solid #B84B27;
+  }
+  .nb-body{
+    width:52px;height:36px;
+    background:#EFE8D6;border:2px solid #8B6040;position:relative;
+  }
+  .nb-door{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:13px;height:20px;background:#5B3A1E;border-radius:2px 2px 0 0;
+  }
+  .nb-win{
+    position:absolute;top:5px;width:11px;height:10px;
+    background:#87CEEB;border:1.5px solid #5B7A8A;
+  }
+  .nb-win-l{left:4px;} .nb-win-r{right:4px;}
+  /* salesman character */
+  .nb-char{
+    position:absolute;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;
+    z-index:5;transition:top 0.75s cubic-bezier(0.4,0,0.2,1);
+  }
+  .nb-head{width:10px;height:10px;background:#F5C89A;border:1.5px solid #8B5E3C;border-radius:2px;}
+  .nb-suit{width:13px;height:9px;background:#1C2B39;border:1.5px solid #0A1520;}
+  .nb-legs{display:flex;gap:2px;}
+  .nb-leg{width:4px;height:7px;background:#243B4F;transform-origin:top center;}
+  .nb-legs .nb-leg:first-child{animation:leg-a 0.42s ease-in-out infinite alternate;}
+  .nb-legs .nb-leg:last-child{animation:leg-b 0.42s ease-in-out infinite alternate;}
+  @keyframes leg-a{from{transform:rotate(-22deg);}to{transform:rotate(22deg);}}
+  @keyframes leg-b{from{transform:rotate(22deg);}to{transform:rotate(-22deg);}}
   .rail h3{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -267,7 +325,35 @@
 
 <div class="layout">
   <aside class="rail">
-    <h3>Stages</h3>
+    <div class="nbhood">
+      <div class="nb-path"></div>
+      <div class="nb-house nb-l" style="top:8px">
+        <div class="nb-roof"></div>
+        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
+      </div>
+      <div class="nb-house nb-r" style="top:58px">
+        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
+        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-r"></div></div>
+      </div>
+      <div class="nb-house nb-l" style="top:110px">
+        <div class="nb-roof" style="border-bottom-color:#4B6B4F"></div>
+        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
+      </div>
+      <div class="nb-house nb-r" style="top:160px">
+        <div class="nb-roof"></div>
+        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-r"></div></div>
+      </div>
+      <div class="nb-house nb-l" style="top:208px">
+        <div class="nb-roof" style="border-bottom-color:#A3874A"></div>
+        <div class="nb-body"><div class="nb-door"></div><div class="nb-win nb-win-l"></div></div>
+      </div>
+      <div class="nb-char" id="nbChar" style="top:4px">
+        <div class="nb-head"></div>
+        <div class="nb-suit"></div>
+        <div class="nb-legs"><div class="nb-leg"></div><div class="nb-leg"></div></div>
+      </div>
+    </div>
+    <h3 style="padding-top:8px;">Stages</h3>
     <div id="stageList"></div>
 
     <a href="game.html" style="
@@ -566,12 +652,19 @@ function saveContent(){
   return window.storage.set(CONTENT_KEY, JSON.stringify(content), true);
 }
 
+const NB_POS={'all':4,'onboarding':12,'foundations':62,'fiber-equipment':114,'in-the-field':164,'ongoing':212};
+function updateNbChar(){
+  const el=document.getElementById('nbChar');
+  if(el) el.style.top=(NB_POS[selectedStage]??4)+'px';
+}
+
 function render(){
   renderStageList();
   renderTopicChips();
   renderGrid();
   renderProgress();
   populateStageSelect();
+  updateNbChar();
 }
 
 function renderStageList(){
