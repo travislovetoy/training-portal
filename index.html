@@ -399,6 +399,13 @@ async function applyMigrations(){
   const order = ['onboarding','foundations','in-the-field','ongoing'];
   content.stages.sort((a,b)=>(order.indexOf(a.id)+1||99)-(order.indexOf(b.id)+1||99));
 
+  // Clean up welcome module description
+  const welcome = content.modules.find(m=>m.id==='welcome');
+  if(welcome && welcome.description && welcome.description.includes("recruiter hasn't added")){
+    welcome.description = 'This is your training library. Nothing here is required in a strict order — browse by stage on the left, or filter by topic. Check things off as you go if you want your progress saved (totally optional). This library gets new modules added regularly, so check back.';
+    changed = true;
+  }
+
   // Remove redundant modules
   const removeIds = ['seed_cable-vs-fiber'];
   removeIds.forEach(id=>{
@@ -516,7 +523,7 @@ function seedContent(){
         topics:['Getting Started'],
         title:'How to use this Field Book',
         url:'',
-        description:'This is your training library. Nothing here is required in a strict order — browse by stage on the left, or filter by topic. Check things off as you go if you want your progress saved (totally optional). This library gets new modules added regularly, so check back.\n\nIf you\'re reading this, your recruiter hasn\'t added real content yet — this is just the starting template.',
+        description:'This is your training library. Nothing here is required in a strict order — browse by stage on the left, or filter by topic. Check things off as you go if you want your progress saved (totally optional). This library gets new modules added regularly, so check back.',
         duration:'2 min read',
         order:0
       }
