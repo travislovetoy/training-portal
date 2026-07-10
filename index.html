@@ -203,6 +203,7 @@
   }
   .video-embed iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}
   .video-embed img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;border:0;}
+  .app-icon{width:72px;height:72px;border-radius:16px;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
   .video-embed.text-only{padding-top:0;background:var(--canvas-2);border:1px dashed var(--line);}
   .video-embed.text-only .textbody{padding:16px;font-size:13.5px;color:var(--ink);white-space:pre-wrap;}
 
@@ -492,7 +493,10 @@ async function applyMigrations(){
   };
   Object.entries(onboardingImages).forEach(([id,img])=>{
     const mod = content.modules.find(m=>m.id===id);
-    if(mod && mod.img !== img){ mod.img = img; changed=true; }
+    if(mod){
+      if(mod.img !== img){ mod.img = img; changed=true; }
+      if(mod.imgType !== 'icon'){ mod.imgType = 'icon'; changed=true; }
+    }
   });
 
   const equipmentImages = {
@@ -623,7 +627,9 @@ function renderGrid(){
     const emb = embedFor(m.url);
     const isDone = completed.has(m.id);
     let mediaHtml = '';
-    if(m.img){
+    if(m.img && m.imgType === 'icon'){
+      mediaHtml = `<img src="${m.img}" alt="${escapeHtml(m.title)}" class="app-icon" loading="lazy">`;
+    } else if(m.img){
       mediaHtml = `<div class="video-embed"><img src="${m.img}" alt="${escapeHtml(m.title)}" loading="lazy"></div>`;
     } else if(m.url && emb){
       mediaHtml = `<div class="video-embed"><iframe src="${emb}" allowfullscreen loading="lazy"></iframe></div>`;
