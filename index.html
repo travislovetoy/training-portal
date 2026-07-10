@@ -476,20 +476,27 @@ function slug(s){
 
 async function loadContent(){
   try{
-    const res = await window.storage.get(CONTENT_KEY, true);
-    if(res && res.value){
-      content = JSON.parse(res.value);
-    } else {
-      content = seedContent();
-      await window.storage.set(CONTENT_KEY, JSON.stringify(content), true);
-    }
+    const raw = localStorage.getItem(CONTENT_KEY);
+    if(raw){ content = JSON.parse(raw); }
+    else { content = seedContent(); localStorage.setItem(CONTENT_KEY, JSON.stringify(content)); }
   }catch(e){
     content = seedContent();
-    try{ await window.storage.set(CONTENT_KEY, JSON.stringify(content), true); }catch(e2){}
+    localStorage.setItem(CONTENT_KEY, JSON.stringify(content));
   }
   await applyMigrations();
+
+  // Auto-restore saved viewer name and progress
+  const savedName = localStorage.getItem('viewer_name');
+  if(savedName){
+    viewerName = savedName;
+    document.getElementById('nameInput').value = savedName;
+    document.getElementById('viewerLabel').textContent = `Tracking as ${viewerName} —`;
+    await loadProgressForName(viewerName);
+  }
+
   render();
   buildNeighborhood();
+  restoreSalesmanPosition();
 }
 
 // One-time content additions. Each migration only applies if its modules
@@ -670,7 +677,8 @@ function seedContent(){
 }
 
 function saveContent(){
-  return window.storage.set(CONTENT_KEY, JSON.stringify(content), true);
+  localStorage.setItem(CONTENT_KEY, JSON.stringify(content));
+  return Promise.resolve();
 }
 
 const NB_STAGE_ORDER=['onboarding','foundations','fiber-equipment','in-the-field','ongoing'];
@@ -886,28 +894,33 @@ function renderProgress(){
 
 async function loadProgressForName(name){
   try{
-    const res = await window.storage.get('progress:' + slug(name), true);
-    if(res && res.value){
-      const data = JSON.parse(res.value);
-      completed = new Set(data.completed || []);
-    } else {
-      completed = new Set();
-    }
-  }catch(e){
-    completed = new Set();
-  }
+    const raw = localStorage.getItem('progress:' + slug(name));
+    if(raw){ const data = JSON.parse(raw); completed = new Set(data.completed || []); }
+    else { completed = new Set(); }
+  }catch(e){ completed = new Set(); }
 }
 
-async function saveProgress(){
+function saveProgress(){
   if(!viewerName) return;
   try{
-    await window.storage.set('progress:' + slug(viewerName), JSON.stringify({
+    localStorage.setItem('progress:' + slug(viewerName), JSON.stringify({
       name: viewerName,
       completed: Array.from(completed),
       updatedAt: new Date().toISOString()
-    }), true);
-  }catch(e){
-    toast('Could not save progress — try again.');
+    }));
+  }catch(e){ toast('Could not save progress — try again.'); }
+}
+
+function restoreSalesmanPosition(){
+  if(completed.size === 0) return;
+  // Walk houses in order and find the last completed one
+  const houses = document.querySelectorAll('.nb-house[data-module-id]');
+  let lastY = null;
+  houses.forEach(h=>{ if(completed.has(h.dataset.moduleId)) lastY = parseInt(h.dataset.y)||0; });
+  if(lastY !== null){
+    const charEl = document.getElementById('nbChar');
+    if(charEl) charEl.style.top = (lastY+6)+'px';
+    document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,lastY-100),behavior:'instant'});
   }
 }
 
@@ -922,10 +935,13 @@ document.getElementById('trackBtn').addEventListener('click', async ()=>{
   const val = document.getElementById('nameInput').value.trim();
   if(!val){ toast('Type your name first.'); return; }
   viewerName = val;
+  localStorage.setItem('viewer_name', viewerName);
   document.getElementById('viewerLabel').textContent = `Tracking as ${viewerName} —`;
   await loadProgressForName(viewerName);
   render();
-  toast(`Welcome back, ${viewerName}. Your progress will be saved as you go.`);
+  buildNeighborhood();
+  restoreSalesmanPosition();
+  toast(`Welcome back, ${viewerName}. Progress saves automatically.`);
 });
 
 document.getElementById('adminBtn').addEventListener('click', ()=>{
