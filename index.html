@@ -857,6 +857,15 @@ function toggleComplete(id, isDone, cardEl){
   stamp.classList.toggle('show', isDone);
   renderProgress();
   buildNeighborhood();
+  if(isDone){
+    const house=document.querySelector(`.nb-house[data-module-id="${id}"]`);
+    if(house){
+      const y=parseInt(house.dataset.y)||0;
+      const charEl=document.getElementById('nbChar');
+      if(charEl) charEl.style.top=(y+6)+'px';
+      document.getElementById('nbpanel')?.scrollTo({top:Math.max(0,y-100),behavior:'smooth'});
+    }
+  }
   if(viewerName){
     saveProgress();
   } else {
