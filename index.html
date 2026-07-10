@@ -399,6 +399,13 @@ async function applyMigrations(){
   const order = ['onboarding','foundations','in-the-field','ongoing'];
   content.stages.sort((a,b)=>(order.indexOf(a.id)+1||99)-(order.indexOf(b.id)+1||99));
 
+  // Remove redundant modules
+  const removeIds = ['seed_cable-vs-fiber'];
+  removeIds.forEach(id=>{
+    const idx = content.modules.findIndex(m=>m.id===id);
+    if(idx !== -1){ content.modules.splice(idx,1); changed=true; }
+  });
+
   // Remap any modules still pointing at old stage ids
   content.modules.forEach(m=>{
     if(stageMap[m.stageId]){ m.stageId=stageMap[m.stageId]; changed=true; }
